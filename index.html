@@ -1,18 +1,629 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/paw.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Whiskr</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Whiskr</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream: #fdf6ee;
+      --warm-white: #fffaf4;
+      --ink: #1a1208;
+      --muted: #9a8f82;
+      --like-green: #3dca7a;
+      --dislike-red: #f05a5a;
+      --like-bg: rgba(61, 202, 122, 0.12);
+      --dislike-bg: rgba(240, 90, 90, 0.12);
+      --shadow: 0 8px 40px rgba(26,18,8,0.12);
+      --shadow-lg: 0 20px 60px rgba(26,18,8,0.18);
+      --radius: 24px;
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #root { width: 100%; height: 100dvh; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    .header {
+      padding: 20px 24px 8px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.5rem, 5vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--ink);
+    }
+    .header h1 span { font-style: italic; font-weight: 400; }
+    .progress-bar-wrap {
+      margin-top: 10px;
+      height: 3px;
+      background: rgba(26,18,8,0.1);
+      border-radius: 99px;
+      overflow: hidden;
+      width: min(340px, 90vw);
+      margin-inline: auto;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--ink);
+      border-radius: 99px;
+      transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    .counter {
+      margin-top: 6px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+
+    /* ── Card Stack ── */
+    .stack-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 8px 16px;
+      min-height: 0;
+    }
+
+    .card-stack {
+      position: relative;
+      width: min(360px, 92vw);
+      height: min(480px, 65dvh);
+    }
+
+    .card {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #fff;
+      box-shadow: var(--shadow);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      will-change: transform;
+      transition: box-shadow 0.2s;
+    }
+    .card:active { cursor: grabbing; }
+    .card.is-top { box-shadow: var(--shadow-lg); z-index: 10; }
+    .card.is-second {
+      z-index: 9;
+      transform: scale(0.95) translateY(12px);
+      pointer-events: none;
+    }
+    .card.is-third {
+      z-index: 8;
+      transform: scale(0.90) translateY(24px);
+      pointer-events: none;
+    }
+
+    .card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+      -webkit-user-drag: none;
+    }
+
+    .card-skeleton {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(110deg, #ece8e1 30%, #f5f1eb 50%, #ece8e1 70%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Swipe hint overlays */
+    .hint-like, .hint-dislike {
+      position: absolute;
+      top: 28px;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 20;
+      transition: opacity 0.1s;
+      border: 3px solid;
+    }
+    .hint-like {
+      left: 20px;
+      color: var(--like-green);
+      border-color: var(--like-green);
+      background: var(--like-bg);
+      transform: rotate(-8deg);
+    }
+    .hint-dislike {
+      right: 20px;
+      color: var(--dislike-red);
+      border-color: var(--dislike-red);
+      background: var(--dislike-bg);
+      transform: rotate(8deg);
+    }
+
+    /* ── Buttons ── */
+    .action-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 12px 24px 28px;
+    }
+
+    .btn-action {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.7rem;
+      background: #fff;
+      box-shadow: var(--shadow);
+      transition: transform 0.15s, box-shadow 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-action:active { transform: scale(0.88); }
+    .btn-dislike { box-shadow: 0 4px 20px rgba(240,90,90,0.22); }
+    .btn-dislike:hover { box-shadow: 0 4px 28px rgba(240,90,90,0.38); }
+    .btn-like {
+      width: 72px;
+      height: 72px;
+      font-size: 1.9rem;
+      box-shadow: 0 4px 20px rgba(61,202,122,0.22);
+    }
+    .btn-like:hover { box-shadow: 0 4px 28px rgba(61,202,122,0.38); }
+
+    /* ── Summary Screen ── */
+    .summary {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .summary-header {
+      padding: 28px 24px 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .summary-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 6vw, 2.4rem);
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .summary-header h2 em { font-style: italic; font-weight: 400; }
+    .summary-stats {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 14px;
+    }
+    .stat-pill {
+      padding: 6px 18px;
+      border-radius: 99px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+    }
+    .stat-liked { background: var(--ink); color: #fff; }
+    .stat-total { background: rgba(26,18,8,0.08); color: var(--muted); }
+
+    .summary-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 20px 20px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .summary-scroll::-webkit-scrollbar { display: none; }
+
+    .liked-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .liked-thumb {
+      aspect-ratio: 1;
+      border-radius: 16px;
+      overflow: hidden;
+      background: rgba(26,18,8,0.06);
+      animation: pop-in 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes pop-in {
+      from { opacity: 0; transform: scale(0.85); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .liked-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .no-likes {
+      text-align: center;
+      padding: 48px 0;
+    }
+    .no-likes p { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.2rem; color: var(--muted); }
+
+    .btn-restart {
+      display: block;
+      width: calc(100% - 48px);
+      margin: 0 24px 28px;
+      padding: 16px;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+    .btn-restart:active { opacity: 0.8; }
+
+    /* ── Tip ── */
+    .swipe-tip {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: center;
+      padding-bottom: 4px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    /* ── Swipe colour overlay ── */
+    .swipe-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      border-radius: var(--radius);
+      opacity: 0;
+      transition: opacity 0.05s;
+    }
+    .swipe-overlay-like {
+      background: linear-gradient(135deg, rgba(61,202,122,0.55) 0%, rgba(61,202,122,0.0) 60%);
+    }
+    .swipe-overlay-dislike {
+      background: linear-gradient(225deg, rgba(240,90,90,0.55) 0%, rgba(240,90,90,0.0) 60%);
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 8px;
+      color: var(--muted);
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useRef, useEffect, useCallback } = React;
+
+// ── Generate Cataas URLs ──────────────────────────────────────────────
+const TOTAL = 15;
+const CAT_IDS = Array.from({ length: TOTAL }, (_, i) =>
+  `https://cataas.com/cat?${i}_${Date.now()}`
+);
+
+// ── SwipeCard ─────────────────────────────────────────────────────────
+function SwipeCard({ url, stackIndex, onSwipe, registerFlyOut }) {
+  const cardRef = useRef(null);
+  const startRef = useRef(null);
+  const currentRef = useRef({ x: 0, y: 0 });
+  const [loaded, setLoaded] = useState(false);
+  const [hint, setHint] = useState(null); // 'like' | 'dislike' | null
+
+  const isTop = stackIndex === 0;
+
+  const getPos = (e) => {
+    const src = e.touches ? e.touches[0] : e;
+    return { x: src.clientX, y: src.clientY };
+  };
+
+  const applyDrag = useCallback((dx, dy) => {
+    if (!cardRef.current) return;
+    const rotate = dx * 0.08;
+    cardRef.current.style.transform = `translate(${dx}px, ${dy * 0.4}px) rotate(${rotate}deg)`;
+    const likeEl = cardRef.current.querySelector('.hint-like');
+    const dislikeEl = cardRef.current.querySelector('.hint-dislike');
+    const overlayLike = cardRef.current.querySelector('.swipe-overlay-like');
+    const overlayDislike = cardRef.current.querySelector('.swipe-overlay-dislike');
+    const ratio = Math.min(Math.abs(dx) / 80, 1);
+    if (dx > 20) {
+      likeEl.style.opacity = ratio;
+      dislikeEl.style.opacity = 0;
+      if (overlayLike) overlayLike.style.opacity = ratio;
+      if (overlayDislike) overlayDislike.style.opacity = 0;
+      setHint('like');
+    } else if (dx < -20) {
+      dislikeEl.style.opacity = ratio;
+      likeEl.style.opacity = 0;
+      if (overlayDislike) overlayDislike.style.opacity = ratio;
+      if (overlayLike) overlayLike.style.opacity = 0;
+      setHint('dislike');
+    } else {
+      likeEl.style.opacity = 0;
+      dislikeEl.style.opacity = 0;
+      if (overlayLike) overlayLike.style.opacity = 0;
+      if (overlayDislike) overlayDislike.style.opacity = 0;
+      setHint(null);
+    }
+  }, []);
+
+  const resetCard = useCallback(() => {
+    if (!cardRef.current) return;
+    cardRef.current.style.transition = 'transform 0.4s cubic-bezier(0.34,1.2,0.64,1)';
+    cardRef.current.style.transform = 'translate(0,0) rotate(0deg)';
+    const likeEl = cardRef.current.querySelector('.hint-like');
+    const dislikeEl = cardRef.current.querySelector('.hint-dislike');
+    const overlayLike = cardRef.current.querySelector('.swipe-overlay-like');
+    const overlayDislike = cardRef.current.querySelector('.swipe-overlay-dislike');
+    if (likeEl) likeEl.style.opacity = 0;
+    if (dislikeEl) dislikeEl.style.opacity = 0;
+    if (overlayLike) overlayLike.style.opacity = 0;
+    if (overlayDislike) overlayDislike.style.opacity = 0;
+    setHint(null);
+    setTimeout(() => {
+      if (cardRef.current) cardRef.current.style.transition = '';
+    }, 400);
+  }, []);
+
+  const flyOut = useCallback((dir) => {
+    if (!cardRef.current) return;
+    const x = dir === 'right' ? window.innerWidth * 1.5 : -window.innerWidth * 1.5;
+    cardRef.current.style.transition = 'transform 0.45s cubic-bezier(0.4,0,1,1)';
+    cardRef.current.style.transform = `translate(${x}px, 0) rotate(${dir === 'right' ? 30 : -30}deg)`;
+    setTimeout(() => onSwipe(dir === 'right'), 420);
+  }, [onSwipe]);
+
+  const onPointerDown = useCallback((e) => {
+    if (!isTop) return;
+    startRef.current = getPos(e);
+    currentRef.current = { x: 0, y: 0 };
+    if (cardRef.current) cardRef.current.style.transition = '';
+  }, [isTop]);
+
+  const onPointerMove = useCallback((e) => {
+    if (!startRef.current || !isTop) return;
+    const pos = getPos(e);
+    const dx = pos.x - startRef.current.x;
+    const dy = pos.y - startRef.current.y;
+    currentRef.current = { x: dx, y: dy };
+    applyDrag(dx, dy);
+  }, [isTop, applyDrag]);
+
+  const onPointerUp = useCallback(() => {
+    if (!startRef.current) return;
+    const { x: dx } = currentRef.current;
+    startRef.current = null;
+    if (Math.abs(dx) > 90) {
+      flyOut(dx > 0 ? 'right' : 'left');
+    } else {
+      resetCard();
+    }
+  }, [flyOut, resetCard]);
+
+  // expose flyOut for buttons via callback ref
+  useEffect(() => {
+    if (!isTop) return;
+    if (registerFlyOut) registerFlyOut(flyOut);
+    return () => { if (registerFlyOut) registerFlyOut(null); };
+  }, [isTop, flyOut, registerFlyOut]);
+
+  const stackClass = ['card', isTop ? 'is-top' : stackIndex === 1 ? 'is-second' : 'is-third'].join(' ');
+
+  return (
+    <div
+      ref={cardRef}
+      className={stackClass}
+      onMouseDown={onPointerDown}
+      onMouseMove={onPointerMove}
+      onMouseUp={onPointerUp}
+      onMouseLeave={onPointerUp}
+      onTouchStart={onPointerDown}
+      onTouchMove={onPointerMove}
+      onTouchEnd={onPointerUp}
+    >
+      {!loaded && <div className="card-skeleton" />}
+      <img
+        src={url}
+        alt="Cat"
+        draggable={false}
+        onLoad={() => setLoaded(true)}
+        style={{ opacity: loaded ? 1 : 0, position: loaded ? 'static' : 'absolute' }}
+      />
+      {isTop && (
+        <>
+          <div className="swipe-overlay swipe-overlay-like" />
+          <div className="swipe-overlay swipe-overlay-dislike" />
+          <div className="hint-like">LIKE ❤️</div>
+          <div className="hint-dislike">😿 NOPE</div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Summary Screen ─────────────────────────────────────────────────────
+function Summary({ liked, total, onRestart }) {
+  return (
+    <div className="summary">
+      <div className="summary-header">
+        <h2>Your <em>purr-fect</em><br/>picks 🐾</h2>
+        <div className="summary-stats">
+          <span className="stat-pill stat-liked">❤️ {liked.length} liked</span>
+          <span className="stat-pill stat-total">{total} cats seen</span>
+        </div>
+      </div>
+
+      <div className="summary-scroll">
+        {liked.length === 0 ? (
+          <div className="no-likes">
+            <p>No favourites this time...</p>
+            <p style={{ marginTop: 8, fontSize: '0.85rem', fontFamily: 'DM Sans, sans-serif', fontStyle: 'normal' }}>Try again — the cats miss you.</p>
+          </div>
+        ) : (
+          <div className="liked-grid">
+            {liked.map((url, i) => (
+              <div className="liked-thumb" key={i} style={{ animationDelay: `${i * 0.06}s` }}>
+                <img src={url} alt={`Liked cat ${i + 1}`} loading="lazy" />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <button className="btn-restart" onClick={onRestart}>
+        Meet more cats →
+      </button>
+    </div>
+  );
+}
+
+// ── App ────────────────────────────────────────────────────────────────
+function App() {
+  const [urls] = useState(() =>
+    Array.from({ length: TOTAL }, (_, i) => `https://cataas.com/cat?v=${Date.now()}_${i}`)
+  );
+  const [index, setIndex] = useState(0);
+  const [liked, setLiked] = useState([]);
+  const [done, setDone] = useState(false);
+  const flyOutRef = useRef(null);
+
+  const handleSwipe = useCallback((isLike) => {
+    const current = urls[index];
+    if (isLike) setLiked(prev => [...prev, current]);
+    const next = index + 1;
+    if (next >= TOTAL) {
+      setTimeout(() => setDone(true), 100);
+    } else {
+      setIndex(next);
+    }
+  }, [index, urls]);
+
+  const triggerButton = (dir) => {
+    if (flyOutRef.current) flyOutRef.current(dir);
+  };
+
+  const handleRestart = () => {
+    setIndex(0);
+    setLiked([]);
+    setDone(false);
+  };
+
+  if (done) {
+    return <Summary liked={liked} total={TOTAL} onRestart={handleRestart} />;
+  }
+
+  const visibleCards = [0, 1, 2]
+    .map(offset => index + offset)
+    .filter(i => i < TOTAL)
+    .reverse(); // render back-to-front
+
+  const progress = (index / TOTAL) * 100;
+
+  return (
+    <>
+      <div className="header">
+        <h1>Whiskr <span>🐾</span></h1>
+        <div className="progress-bar-wrap">
+          <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="counter">{index + 1} / {TOTAL}</p>
+      </div>
+
+      <div className="stack-area">
+        <div className="card-stack">
+          {visibleCards.length === 0 ? (
+            <div className="empty-state"><span>All done!</span></div>
+          ) : (
+            visibleCards.map((cardIndex) => (
+              <SwipeCard
+                key={urls[cardIndex]}
+                url={urls[cardIndex]}
+                stackIndex={cardIndex - index}
+                onSwipe={handleSwipe}
+                registerFlyOut={cardIndex === index ? (fn) => { flyOutRef.current = fn; } : null}
+              />
+            ))
+          )}
+        </div>
+      </div>
+
+      <p className="swipe-tip">← swipe to decide →</p>
+
+      <div className="action-bar">
+        <button
+          className="btn-action btn-dislike"
+          onClick={() => triggerButton('left')}
+          aria-label="Dislike"
+        >
+          😿
+        </button>
+        <button
+          className="btn-action btn-like"
+          onClick={() => triggerButton('right')}
+          aria-label="Like"
+        >
+          ❤️
+        </button>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
 </html>
