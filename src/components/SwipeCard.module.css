@@ -1,0 +1,107 @@
+.card {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--shadow);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  will-change: transform;
+}
+
+.card:active {
+  cursor: grabbing;
+}
+
+.isTop {
+  box-shadow: var(--shadow-lg);
+  z-index: 10;
+}
+
+.isSecond {
+  z-index: 9;
+  transform: scale(0.95) translateY(12px);
+  pointer-events: none;
+}
+
+.isThird {
+  z-index: 8;
+  transform: scale(0.9) translateY(24px);
+  pointer-events: none;
+}
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  /* image loads into position even if skeleton was absolute */
+  position: relative;
+}
+
+.skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, #ece8e1 30%, #f5f1eb 50%, #ece8e1 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Swipe colour overlay */
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  border-radius: var(--radius);
+  opacity: 0;
+}
+
+.overlayLike {
+  background: linear-gradient(135deg, rgba(61, 202, 122, 0.55) 0%, rgba(61, 202, 122, 0.0) 60%);
+}
+
+.overlayDislike {
+  background: linear-gradient(225deg, rgba(240, 90, 90, 0.55) 0%, rgba(240, 90, 90, 0.0) 60%);
+}
+
+/* Hint labels */
+.hint {
+  position: absolute;
+  top: 28px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 20;
+  border: 3px solid;
+  transition: opacity 0.08s;
+}
+
+.hintLike {
+  left: 20px;
+  color: var(--like-green);
+  border-color: var(--like-green);
+  background: var(--like-bg);
+  transform: rotate(-8deg);
+}
+
+.hintDislike {
+  right: 20px;
+  color: var(--dislike-red);
+  border-color: var(--dislike-red);
+  background: var(--dislike-bg);
+  transform: rotate(8deg);
+}

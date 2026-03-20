@@ -1,0 +1,49 @@
+.bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 12px 24px 28px;
+}
+
+.btn {
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.6rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  width: 60px;
+  height: 60px;
+}
+
+.btn:active {
+  transform: scale(0.9);
+}
+
+.btnDislike {
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(240, 90, 90, 0.2);
+  color: var(--dislike-red);
+}
+
+.btnDislike:hover {
+  box-shadow: 0 4px 24px rgba(240, 90, 90, 0.35);
+}
+
+.btnLike {
+  background: var(--ink);
+  box-shadow: 0 4px 20px rgba(26, 18, 8, 0.2);
+  color: #fff;
+  width: 70px;
+  height: 70px;
+  font-size: 1.8rem;
+}
+
+.btnLike:hover {
+  box-shadow: 0 4px 24px rgba(26, 18, 8, 0.35);
+}

@@ -1,0 +1,40 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --cream: #fdf6ee;
+  --warm-white: #fffaf4;
+  --ink: #1a1208;
+  --muted: #9a8f82;
+  --like-green: #3dca7a;
+  --dislike-red: #f05a5a;
+  --like-bg: rgba(61, 202, 122, 0.12);
+  --dislike-bg: rgba(240, 90, 90, 0.12);
+  --shadow: 0 8px 40px rgba(26, 18, 8, 0.12);
+  --shadow-lg: 0 20px 60px rgba(26, 18, 8, 0.18);
+  --radius: 24px;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}

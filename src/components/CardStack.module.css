@@ -1,0 +1,26 @@
+.area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 8px 16px;
+  min-height: 0;
+}
+
+.stack {
+  position: relative;
+  width: min(360px, 92vw);
+  height: min(480px, 65dvh);
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
